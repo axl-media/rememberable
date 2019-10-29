@@ -18,6 +18,9 @@ User::first()->remember(60 * 60 * 24)->posts()->get();
 
 It works by simply remembering the SQL query that was used and storing the result. If the same query is attempted while the cache is persisted it will be retrieved from the store instead of hitting your database again.
 
+## 4.0+ brings support to multiple methods
+Make sure you install the `4.0+` versions if you want to have support for multiple eloquent methods.
+
 ## Installation
 
 Install using Composer, just as you would anything else.
