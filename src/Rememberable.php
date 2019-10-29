@@ -1,8 +1,8 @@
 <?php
 
-namespace Watson\Rememberable;
+namespace AXLMedia\Rememberable;
 
-use Watson\Rememberable\Query\Builder;
+use AXLMedia\Rememberable\Query\Builder;
 
 trait Rememberable
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Watson\Rememberable\Query;
+namespace AXLMedia\Rememberable\Query;
 
 use DateTime;
 
