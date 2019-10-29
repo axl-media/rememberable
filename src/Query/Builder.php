@@ -3,8 +3,9 @@
 namespace AXLMedia\Rememberable\Query;
 
 use DateTime;
+use Illuminate\Database\Query\Builder as BaseBuilder;
 
-class Builder extends \Illuminate\Database\Query\Builder
+class Builder extends BaseBuilder
 {
     /**
      * The key that should be used when caching the query.
@@ -49,20 +50,68 @@ class Builder extends \Illuminate\Database\Query\Builder
      */
     public function get($columns = ['*'])
     {
-        if ( ! is_null($this->cacheSeconds)) {
-            return $this->getCached($columns);
+        if (! is_null($this->cacheSeconds)) {
+            return $this->getCached($columns, 'get');
         }
 
         return parent::get($columns);
     }
 
     /**
+     * Execute the query and get the first result.
+     *
+     * @param  array  $columns
+     * @return \Illuminate\Database\Eloquent\Model|object|static|null
+     */
+    public function first($columns = ['*'])
+    {
+        if (! is_null($this->cacheSeconds)) {
+            return $this->getCached($columns, 'first');
+        }
+
+        return parent::first($columns);
+    }
+
+    /**
+     * Execute a query for a single record by ID.
+     *
+     * @param  int|string  $id
+     * @param  array  $columns
+     * @return mixed|static
+     */
+    public function find($id, $columns = ['*'])
+    {
+        if (! is_null($this->cacheSeconds)) {
+            return $this->getCached($columns, 'find');
+        }
+
+        return parent::find($id, $columns);
+    }
+
+    /**
+     * Retrieve the "count" result of the query.
+     *
+     * @param  string  $columns
+     * @return int
+     */
+    public function count($columns = '*')
+    {
+        if (! is_null($this->cacheSeconds)) {
+            return $this->getCached($columns, 'count');
+        }
+
+        return parent::count($columns);
+    }
+
+    /**
      * Execute the cached get query statement.
      *
      * @param  array  $columns
+     * @param  string  $method
+     * @param  string|null  $id
      * @return array
      */
-    public function getCached($columns = ['*'])
+    public function getCached($columns = ['*'], $method = 'get', $id = null)
     {
         if (is_null($this->columns)) {
             $this->columns = $columns;
@@ -71,13 +120,13 @@ class Builder extends \Illuminate\Database\Query\Builder
         // If the query is requested to be cached, we will cache it using a unique key
         // for this database connection and query statement, including the bindings
         // that are used on this query, providing great convenience when caching.
-        $key = $this->getCacheKey();
+        $key = $this->getCacheKey(null, $method, $id);
 
         $seconds = $this->cacheSeconds;
 
         $cache = $this->getCache();
 
-        $callback = $this->getCacheCallback($columns);
+        $callback = $this->getCacheCallback($columns, $method, $id);
 
         // If we've been given a DateTime instance or a "seconds" value that is
         // greater than zero then we'll pass it on to the remember method.
@@ -98,8 +147,8 @@ class Builder extends \Illuminate\Database\Query\Builder
      */
     public function pluck($column, $key = null)
     {
-        if ( ! is_null($this->cacheSeconds)) {
-            return $this->pluckCached($column, $key);
+        if (! is_null($this->cacheSeconds)) {
+            return $this->pluckCached($column, $key, 'pluck');
         }
 
         return parent::pluck($column, $key);
@@ -112,9 +161,9 @@ class Builder extends \Illuminate\Database\Query\Builder
      * @param  mixed  $key
      * @return array
      */
-    public function pluckCached($column, $key = null)
+    public function pluckCached($column, $key = null, $method = 'get')
     {
-        $cacheKey = $this->getCacheKey($column.$key);
+        $cacheKey = $this->getCacheKey($column.$key, $method);
 
         $seconds = $this->cacheSeconds;
 
@@ -241,37 +290,44 @@ class Builder extends \Illuminate\Database\Query\Builder
      * Get a unique cache key for the complete query.
      *
      * @param  mixed  $appends
+     * @param  string  $method
+     * @param  string|null  $id
      * @return string
      */
-    public function getCacheKey($appends = null)
+    public function getCacheKey($appends = null, $method = 'get', $id = null)
     {
-        return $this->cachePrefix.':'.($this->cacheKey ?: $this->generateCacheKey($appends));
+        return $this->cachePrefix.':'.($this->cacheKey ?: $this->generateCacheKey($appends, $method, $id));
     }
 
     /**
      * Generate the unique cache key for the query.
      *
      * @param  mixed  $appends
+     * @param  string  $method
      * @return string
      */
-    public function generateCacheKey($appends = null)
+    public function generateCacheKey($appends = null, $method = 'get', $id = null)
     {
         $name = $this->connection->getName();
 
-        return hash('sha256', $name.$this->toSql().serialize($this->getBindings()).$appends);
+        if ($method === 'count') {
+            return hash('sha256', $name.$method.$id.serialize($this->getBindings()).$appends);
+        } else {
+            return hash('sha256', $name.$method.$id.$this->toSql().serialize($this->getBindings()).$appends);
+        }
     }
 
     /**
-     * Flush the cache for the current model or a given tag name
+     * Flush the cache for the current model or a given tag name.
      *
      * @param  mixed  $cacheTags
-     * @return boolean
+     * @return bool
      */
     public function flushCache($cacheTags = null)
     {
         $cache = $this->getCacheDriver();
 
-        if ( ! method_exists($cache, 'tags')) {
+        if (! method_exists($cache, 'tags')) {
             return false;
         }
 
@@ -286,14 +342,20 @@ class Builder extends \Illuminate\Database\Query\Builder
      * Get the callback for get queries.
      *
      * @param  array  $columns
+     * @param  string  $method
+     * @param  string|null  $id
      * @return \Closure
      */
-    protected function getCacheCallback($columns)
+    protected function getCacheCallback($columns, $method = 'get', $id = null)
     {
-        return function () use ($columns) {
+        return function () use ($columns, $method, $id) {
             $this->cacheSeconds = null;
 
-            return $this->get($columns);
+            if ($id) {
+                return $this->{$method}($id, $columns);
+            } else {
+                return $this->{$method}($columns);
+            }
         };
     }
 
