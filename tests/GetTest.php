@@ -11,7 +11,7 @@ class GetTest extends TestCase
     public function test_get()
     {
         $post = factory(Post::class)->create();
-        $posts = Post::remember(now()->addHours(1))->paginate();
+        $posts = Post::remember(now()->addHours(1))->get();
         $cache = Cache::get('rememberable:sqlitegetselect * from "posts"a:0:{}');
 
         $this->assertNotNull($cache);
