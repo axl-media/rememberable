@@ -3,10 +3,13 @@
 namespace AXLMedia\Rememberable\Query;
 
 use DateTime;
+use AXLMedia\Rememberable\Traits\CacheForGet;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 
 class Builder extends BaseBuilder
 {
+    use CacheForGet;
+
     /**
      * The key that should be used when caching the query.
      *
@@ -19,7 +22,7 @@ class Builder extends BaseBuilder
      *
      * @var int
      */
-    protected $cacheSeconds;
+    protected $cacheTime;
 
     /**
      * The tags for the query cache.
@@ -36,255 +39,18 @@ class Builder extends BaseBuilder
     protected $cacheDriver;
 
     /**
-     * A cache prefix.
+     * A cache prefix string.
      *
      * @var string
      */
     protected $cachePrefix = 'rememberable';
 
     /**
-     * Execute the get query statement.
+     * The key that should be used when caching the query.
      *
-     * @param  array  $columns
-     * @return array|static[]
+     * @var string
      */
-    public function get($columns = ['*'])
-    {
-        if (! is_null($this->cacheSeconds)) {
-            return $this->getCached($columns, 'get');
-        }
-
-        return parent::get($columns);
-    }
-
-    /**
-     * Execute the query and get the first result.
-     *
-     * @param  array  $columns
-     * @return \Illuminate\Database\Eloquent\Model|object|static|null
-     */
-    public function first($columns = ['*'])
-    {
-        if (! is_null($this->cacheSeconds)) {
-            return $this->getCached($columns, 'first');
-        }
-
-        return parent::first($columns);
-    }
-
-    /**
-     * Execute a query for a single record by ID.
-     *
-     * @param  int|string  $id
-     * @param  array  $columns
-     * @return mixed|static
-     */
-    public function find($id, $columns = ['*'])
-    {
-        if (! is_null($this->cacheSeconds)) {
-            return $this->getCached($columns, 'find');
-        }
-
-        return parent::find($id, $columns);
-    }
-
-    /**
-     * Retrieve the "count" result of the query.
-     *
-     * @param  string  $columns
-     * @return int
-     */
-    public function count($columns = '*')
-    {
-        if (! is_null($this->cacheSeconds)) {
-            return $this->getCached($columns, 'count');
-        }
-
-        return parent::count($columns);
-    }
-
-    /**
-     * Execute the cached get query statement.
-     *
-     * @param  array  $columns
-     * @param  string  $method
-     * @param  string|null  $id
-     * @return array
-     */
-    public function getCached($columns = ['*'], $method = 'get', $id = null)
-    {
-        if (is_null($this->columns)) {
-            $this->columns = $columns;
-        }
-
-        // If the query is requested to be cached, we will cache it using a unique key
-        // for this database connection and query statement, including the bindings
-        // that are used on this query, providing great convenience when caching.
-        $key = $this->getCacheKey(null, $method, $id);
-
-        $seconds = $this->cacheSeconds;
-
-        $cache = $this->getCache();
-
-        $callback = $this->getCacheCallback($columns, $method, $id);
-
-        // If we've been given a DateTime instance or a "seconds" value that is
-        // greater than zero then we'll pass it on to the remember method.
-        // Otherwise we'll cache it indefinitely.
-        if ($seconds instanceof DateTime || $seconds > 0) {
-            return $cache->remember($key, $seconds, $callback);
-        }
-
-        return $cache->rememberForever($key, $callback);
-    }
-
-    /**
-     * Execute the pluck query statement.
-     *
-     * @param  string  $column
-     * @param  mixed  $key
-     * @return array|static[]
-     */
-    public function pluck($column, $key = null)
-    {
-        if (! is_null($this->cacheSeconds)) {
-            return $this->pluckCached($column, $key, 'pluck');
-        }
-
-        return parent::pluck($column, $key);
-    }
-
-    /**
-     * Execute the cached pluck query statement.
-     *
-     * @param  string  $column
-     * @param  mixed  $key
-     * @return array
-     */
-    public function pluckCached($column, $key = null, $method = 'get')
-    {
-        $cacheKey = $this->getCacheKey($column.$key, $method);
-
-        $seconds = $this->cacheSeconds;
-
-        $cache = $this->getCache();
-
-        $callback = $this->pluckCacheCallback($column, $key);
-
-        if ($seconds instanceof DateTime || $seconds > 0) {
-            return $cache->remember($cacheKey, $seconds, $callback);
-        }
-
-        return $cache->rememberForever($cacheKey, $callback);
-    }
-
-    /**
-     * Indicate that the query results should be cached.
-     *
-     * @param  \DateTime|int  $seconds
-     * @param  string  $key
-     * @return $this
-     */
-    public function remember($seconds, $key = null)
-    {
-        list($this->cacheSeconds, $this->cacheKey) = [$seconds, $key];
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the query results should be cached forever.
-     *
-     * @param  string  $key
-     * @return \Illuminate\Database\Query\Builder|static
-     */
-    public function rememberForever($key = null)
-    {
-        return $this->remember(-1, $key);
-    }
-
-    /**
-     * Indicate that the query should not be cached.
-     *
-     * @return \Illuminate\Database\Query\Builder|static
-     */
-    public function dontRemember()
-    {
-        $this->cacheSeconds = $this->cacheKey = $this->cacheTags = null;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the query should not be cached. Alias for dontRemember().
-     *
-     * @return \Illuminate\Database\Query\Builder|static
-     */
-    public function doNotRemember()
-    {
-        return $this->dontRemember();
-    }
-
-    /**
-     * Set the cache prefix.
-     *
-     * @param  string  $prefix
-     * @return $this
-     */
-    public function prefix($prefix)
-    {
-        $this->cachePrefix = $prefix;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the results, if cached, should use the given cache tags.
-     *
-     * @param  array|mixed  $cacheTags
-     * @return $this
-     */
-    public function cacheTags($cacheTags)
-    {
-        $this->cacheTags = $cacheTags;
-
-        return $this;
-    }
-
-    /**
-     * Indicate that the results, if cached, should use the given cache driver.
-     *
-     * @param  string  $cacheDriver
-     * @return $this
-     */
-    public function cacheDriver($cacheDriver)
-    {
-        $this->cacheDriver = $cacheDriver;
-
-        return $this;
-    }
-
-    /**
-     * Get the cache object with tags assigned, if applicable.
-     *
-     * @return \Illuminate\Cache\CacheManager
-     */
-    protected function getCache()
-    {
-        $cache = $this->getCacheDriver();
-
-        return $this->cacheTags ? $cache->tags($this->cacheTags) : $cache;
-    }
-
-    /**
-     * Get the cache driver.
-     *
-     * @return \Illuminate\Cache\CacheManager
-     */
-    protected function getCacheDriver()
-    {
-        return app('cache')->driver($this->cacheDriver);
-    }
+    protected $usePlainKey = false;
 
     /**
      * Get a unique cache key for the complete query.
@@ -308,13 +74,32 @@ class Builder extends BaseBuilder
      */
     public function generateCacheKey($appends = null, $method = 'get', $id = null)
     {
+        if ($this->usePlainKey) {
+            return  $this->generatePlainCacheKey($appends, $method, $id);
+        }
+
+        return hash(
+            'sha256',
+            $this->generatePlainCacheKey($appends, $method, $id)
+        );
+    }
+
+    /**
+     * Generate the plain unique cache key for the query.
+     *
+     * @param  mixed  $appends
+     * @param  string  $method
+     * @return string
+     */
+    public function generatePlainCacheKey($appends = null, $method = 'get', $id = null)
+    {
         $name = $this->connection->getName();
 
         if ($method === 'count') {
-            return hash('sha256', $name.$method.$id.serialize($this->getBindings()).$appends);
-        } else {
-            return hash('sha256', $name.$method.$id.$this->toSql().serialize($this->getBindings()).$appends);
+            return $name.$method.$id.serialize($this->getBindings()).$appends;
         }
+
+        return $name.$method.$id.$this->toSql().serialize($this->getBindings()).$appends;
     }
 
     /**
@@ -333,45 +118,128 @@ class Builder extends BaseBuilder
 
         $cacheTags = $cacheTags ?: $this->cacheTags;
 
-        $cache->tags($cacheTags)->flush();
+        $cache->tags($cacheTags ?: $this->cacheTags)->flush();
 
         return true;
     }
 
     /**
-     * Get the callback for get queries.
+     * Get the cache driver.
      *
-     * @param  array  $columns
-     * @param  string  $method
-     * @param  string|null  $id
-     * @return \Closure
+     * @return \Illuminate\Cache\CacheManager
      */
-    protected function getCacheCallback($columns, $method = 'get', $id = null)
+    protected function getCacheDriver()
     {
-        return function () use ($columns, $method, $id) {
-            $this->cacheSeconds = null;
-
-            if ($id) {
-                return $this->{$method}($id, $columns);
-            } else {
-                return $this->{$method}($columns);
-            }
-        };
+        return app('cache')->driver($this->cacheDriver);
     }
 
     /**
-     * Get the callback for pluck queries.
+     * Get the cache object with tags assigned, if applicable.
      *
-     * @param  string  $column
-     * @param  mixed  $key
-     * @return \Closure
+     * @return \Illuminate\Cache\CacheManager
      */
-    protected function pluckCacheCallback($column, $key = null)
+    protected function getCache()
     {
-        return function () use ($column, $key) {
-            $this->cacheSeconds = null;
+        $cache = $this->getCacheDriver();
 
-            return $this->pluck($column, $key);
-        };
+        return $this->cacheTags ? $cache->tags($this->cacheTags) : $cache;
+    }
+
+    /**
+     * Indicate that the query results should be cached.
+     *
+     * @param  \DateTime|int  $seconds
+     * @param  string  $key
+     * @return \AXLMedia\Rememberable\Query\Builder
+     */
+    public function remember($seconds, $key = null)
+    {
+        list($this->cacheTime, $this->cacheKey) = [$seconds, $key];
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the query results should be cached forever.
+     *
+     * @param  string  $key
+     * @return \Illuminate\Database\Query\Builder|static
+     */
+    public function rememberForever($key = null)
+    {
+        return $this->remember(-1, $key);
+    }
+
+    /**
+     * Indicate that the query should not be cached.
+     *
+     * @return \Illuminate\Database\Query\Builder|static
+     */
+    public function dontRemember()
+    {
+        $this->cacheTime = $this->cacheKey = $this->cacheTags = null;
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the query should not be cached. Alias for dontRemember().
+     *
+     * @return \Illuminate\Database\Query\Builder|static
+     */
+    public function doNotRemember()
+    {
+        return $this->dontRemember();
+    }
+
+    /**
+     * Set the cache prefix.
+     *
+     * @param  string  $prefix
+     * @return \AXLMedia\Rememberable\Query\Builder
+     */
+    public function prefix($prefix)
+    {
+        $this->cachePrefix = $prefix;
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the results, if cached, should use the given cache tags.
+     *
+     * @param  array|mixed  $cacheTags
+     * @return \AXLMedia\Rememberable\Query\Builder
+     */
+    public function cacheTags($cacheTags)
+    {
+        $this->cacheTags = $cacheTags;
+
+        return $this;
+    }
+
+    /**
+     * Indicate that the results, if cached, should use the given cache driver.
+     *
+     * @param  string  $cacheDriver
+     * @return \AXLMedia\Rememberable\Query\Builder
+     */
+    public function cacheDriver($cacheDriver)
+    {
+        $this->cacheDriver = $cacheDriver;
+
+        return $this;
+    }
+
+    /**
+     * Use a plain key instead of a hashed one in the cache driver.
+     *
+     * @return \AXLMedia\Rememberable\Query\Builder
+     */
+    public function plainKey()
+    {
+        $this->usePlainKey = true;
+
+        return $this;
     }
 }

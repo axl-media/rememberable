@@ -12,9 +12,7 @@ trait Rememberable
     protected function newBaseQueryBuilder()
     {
         $conn = $this->getConnection();
-
         $grammar = $conn->getQueryGrammar();
-
         $builder = new Builder($conn, $grammar, $conn->getPostProcessor());
 
         if (isset($this->rememberFor)) {
@@ -31,6 +29,10 @@ trait Rememberable
 
         if (isset($this->rememberCacheDriver)) {
             $builder->cacheDriver($this->rememberCacheDriver);
+        }
+
+        if (isset($this->rememberUsePlainKey)) {
+            $builder->plainKey();
         }
 
         return $builder;
