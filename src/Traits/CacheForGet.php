@@ -7,11 +7,11 @@ use DateTime;
 trait CacheForGet
 {
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function get($columns = ['*'])
     {
-        if (! is_null($this->cacheTime)) {
+        if (!is_null($this->cacheTime)) {
             return $this->getCacheForGet($columns);
         }
 
@@ -21,7 +21,8 @@ trait CacheForGet
     /**
      * Get the cache for get().
      *
-     * @param  array  $columns
+     * @param array $columns
+     *
      * @return array
      */
     protected function getCacheForGet($columns = ['*'])
@@ -46,7 +47,8 @@ trait CacheForGet
     /**
      * Get the callback for get() queries.
      *
-     * @param  array  $columns
+     * @param array $columns
+     *
      * @return \Closure
      */
     protected function getCacheCallbackForGet($columns = ['*'])

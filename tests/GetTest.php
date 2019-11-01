@@ -2,9 +2,8 @@
 
 namespace AXLMedia\Rememberable\Test;
 
-use Cache;
 use AXLMedia\Rememberable\Test\Models\Post;
-use AXLMedia\Rememberable\Test\Models\User;
+use Cache;
 
 class GetTest extends TestCase
 {
