@@ -2,8 +2,8 @@
 
 namespace AXLMedia\Rememberable\Test\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use AXLMedia\Rememberable\Rememberable;
+use Illuminate\Database\Eloquent\Model;
 
 class Post extends Model
 {

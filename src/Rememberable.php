@@ -7,7 +7,7 @@ use AXLMedia\Rememberable\Query\Builder;
 trait Rememberable
 {
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     protected function newBaseQueryBuilder()
     {

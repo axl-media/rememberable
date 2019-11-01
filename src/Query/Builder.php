@@ -2,7 +2,6 @@
 
 namespace AXLMedia\Rememberable\Query;
 
-use DateTime;
 use AXLMedia\Rememberable\Traits\CacheForGet;
 use Illuminate\Database\Query\Builder as BaseBuilder;
 
@@ -55,9 +54,10 @@ class Builder extends BaseBuilder
     /**
      * Get a unique cache key for the complete query.
      *
-     * @param  mixed  $appends
-     * @param  string  $method
-     * @param  string|null  $id
+     * @param mixed       $appends
+     * @param string      $method
+     * @param string|null $id
+     *
      * @return string
      */
     public function getCacheKey($appends = null, $method = 'get', $id = null)
@@ -68,8 +68,9 @@ class Builder extends BaseBuilder
     /**
      * Generate the unique cache key for the query.
      *
-     * @param  mixed  $appends
-     * @param  string  $method
+     * @param mixed  $appends
+     * @param string $method
+     *
      * @return string
      */
     public function generateCacheKey($appends = null, $method = 'get', $id = null)
@@ -87,8 +88,9 @@ class Builder extends BaseBuilder
     /**
      * Generate the plain unique cache key for the query.
      *
-     * @param  mixed  $appends
-     * @param  string  $method
+     * @param mixed  $appends
+     * @param string $method
+     *
      * @return string
      */
     public function generatePlainCacheKey($appends = null, $method = 'get', $id = null)
@@ -105,14 +107,15 @@ class Builder extends BaseBuilder
     /**
      * Flush the cache for the current model or a given tag name.
      *
-     * @param  mixed  $cacheTags
+     * @param mixed $cacheTags
+     *
      * @return bool
      */
     public function flushCache($cacheTags = null)
     {
         $cache = $this->getCacheDriver();
 
-        if (! method_exists($cache, 'tags')) {
+        if (!method_exists($cache, 'tags')) {
             return false;
         }
 
@@ -148,8 +151,9 @@ class Builder extends BaseBuilder
     /**
      * Indicate that the query results should be cached.
      *
-     * @param  \DateTime|int  $seconds
-     * @param  string  $key
+     * @param \DateTime|int $seconds
+     * @param string        $key
+     *
      * @return \AXLMedia\Rememberable\Query\Builder
      */
     public function remember($seconds, $key = null)
@@ -162,7 +166,8 @@ class Builder extends BaseBuilder
     /**
      * Indicate that the query results should be cached forever.
      *
-     * @param  string  $key
+     * @param string $key
+     *
      * @return \Illuminate\Database\Query\Builder|static
      */
     public function rememberForever($key = null)
@@ -195,7 +200,8 @@ class Builder extends BaseBuilder
     /**
      * Set the cache prefix.
      *
-     * @param  string  $prefix
+     * @param string $prefix
+     *
      * @return \AXLMedia\Rememberable\Query\Builder
      */
     public function prefix($prefix)
@@ -208,7 +214,8 @@ class Builder extends BaseBuilder
     /**
      * Indicate that the results, if cached, should use the given cache tags.
      *
-     * @param  array|mixed  $cacheTags
+     * @param array|mixed $cacheTags
+     *
      * @return \AXLMedia\Rememberable\Query\Builder
      */
     public function cacheTags($cacheTags)
@@ -221,7 +228,8 @@ class Builder extends BaseBuilder
     /**
      * Indicate that the results, if cached, should use the given cache driver.
      *
-     * @param  string  $cacheDriver
+     * @param string $cacheDriver
+     *
      * @return \AXLMedia\Rememberable\Query\Builder
      */
     public function cacheDriver($cacheDriver)
