@@ -1,4 +1,4 @@
-Rememberable, Laravel 5 query cache
+Laravel Rememberable
 ===================================
 
 [![Total Downloads](https://poser.pugx.org/axl-media/rememberable/downloads.svg)](https://packagist.org/packages/axl-media/rememberable)
@@ -6,7 +6,15 @@ Rememberable, Laravel 5 query cache
 [![Latest Unstable Version](https://poser.pugx.org/axl-media/rememberable/v/unstable.svg)](https://packagist.org/packages/axl-media/rememberable)
 [![License](https://poser.pugx.org/axl-media/rememberable/license.svg)](https://packagist.org/packages/axl-media/rememberable)
 
-Rememberable is an Eloquent trait for Laravel 5.0+ that brings back the `remember()` query functions from Laravel 4.2. This makes it super easy to cache your query results for an adjustable amount of time.
+Rememberable is a package useful for using the caching layer at the query builder level.
+
+```php
+// Cache the posts for 1 hour
+Post::remember(now()->addHours(1))->get();
+
+// Cache the posts for 24 hours.
+Post::remember(24 * 60 * 60)->get();
+```
 
 ```php
 // Get a the first user's posts and remember them for a day.
@@ -16,20 +24,20 @@ User::first()->remember(now()->addDay())->posts()->get();
 User::first()->remember(60 * 60 * 24)->posts()->get();
 ```
 
-It works by simply remembering the SQL query that was used and storing the result. If the same query is attempted while the cache is persisted it will be retrieved from the store instead of hitting your database again.
+## Available Methods
 
-## 4.0+ brings support to multiple methods
-Make sure you install the `4.0+` versions if you want to have support for multiple eloquent methods.
+- `get()`
+- `first()` and `firstOrFail()`
+- `find()` and `findOrFail()`
+- `count()`
 
 ## Installation
 
-Install using Composer, just as you would anything else.
-
 ```sh
-composer require axl-media/rememberable
+$ composer require axl-media/rememberable
 ```
 
-The easiest way to get started with Eloquent is to create an abstract `App\Model` which you can extend your application models from. In this base model you can import the rememberable trait which will extend the same caching functionality to any queries you build off your model.
+You can simply apply the trait to each and every model you wish to use `remember()` on.
 
 ```php
 <?php
@@ -38,25 +46,13 @@ namespace App;
 use AXLMedia\Rememberable\Rememberable;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 
-abstract class Model extends Eloquent
+class Post extends Eloquent
 {
     use Rememberable;
+
+    ...
 }
 ```
-
-Now, just ensure that your application models from this new `App\Model` instead of Eloquent.
-
-```php
-<?php
-namespace App;
-
-class Post extends Model
-{
-    //
-}
-```
-
-Alternatively, you can simply apply the trait to each and every model you wish to use `remember()` on.
 
 ## Usage
 
@@ -107,16 +103,12 @@ You can set a cache tag for all queries of a model by setting the `$rememberCach
 Validating works by caching queries on a query-by-query basis. This means that when you perform eager-loading those additional queries will not be cached as well unless explicitly specified. You can do that by using a callback with your eager-loads.
 
 ```php
-$users = User::where("id", ">", "1")
-    ->with(['posts' => function ($q) { $q->remember(60 * 60); }])
-    ->remember(60 * 60)
-    ->take(5)
-    ->get();
-
-$user = User::where("id", ">", "1")
-    ->with(['posts' => function ($q) { $q->remember(60 * 60); }])
-    ->remember(60 * 60)
-    ->first();
+$users = User::where('id', '>', '1')
+    ->with([
+        'posts' => function ($query) {
+            $query->remember(60 * 60);
+        }
+    ])->remember(60 * 60)->take(5)->get();
 ```
 
 ### Always enable
