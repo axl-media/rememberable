@@ -11,7 +11,7 @@ trait CacheForGet
      */
     public function get($columns = ['*'])
     {
-        if (!is_null($this->cacheTime)) {
+        if (! is_null($this->cacheTime)) {
             return $this->getCacheForGet($columns);
         }
 
