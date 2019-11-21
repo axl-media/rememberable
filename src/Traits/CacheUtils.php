@@ -4,7 +4,7 @@ namespace AXLMedia\Rememberable\Traits;
 
 use DateTime;
 
-class CacheUtils
+trait CacheUtils
 {
     /**
      * Get the cache for get().
