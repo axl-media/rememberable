@@ -115,7 +115,7 @@ class Builder extends BaseBuilder
     {
         $cache = $this->getCacheDriver();
 
-        if (!method_exists($cache, 'tags')) {
+        if (! method_exists($cache, 'tags')) {
             return false;
         }
 
@@ -158,7 +158,7 @@ class Builder extends BaseBuilder
      */
     public function remember($seconds, $key = null)
     {
-        list($this->cacheTime, $this->cacheKey) = [$seconds, $key];
+        [$this->cacheTime, $this->cacheKey] = [$seconds, $key];
 
         return $this;
     }
